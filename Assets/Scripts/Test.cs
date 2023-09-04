@@ -1,24 +1,15 @@
-﻿using System;
-using System.Text;
-using Infra.Networking;
+﻿using Proxy;
 using UnityEngine;
 
 public class Test : MonoBehaviour
 {
     private void Start()
     {
-        HttpRequest.httpRequestDoneEvent += (r) =>
-        {
-            if (r == HttpRequest.HttpRequestResult.Error)
-            {
-                return;
-            }
-            Debug.Log($"uri : {r.url}");
-            var text = Encoding.UTF8.GetString(r.data);
-            Debug.Log($"data: {text}");
-        };
-        // HttpRequest.DoGet("http://baidu.com");
-        HttpRequest.DoGet("http://localhost:9090/test.txt");
-        HttpRequest.DoGet("http://localhost:9090/test123.txt");
+        ProxyServerConfiguration configuration = new ProxyServerConfiguration(
+            "localhost", 9090,
+            "localhost", 9091
+        );
+        configuration.AddPathMapping("/hi", "/hello");
+        ProxyServerLifetimeHolder.Create(configuration);
     }
 }

@@ -8,20 +8,22 @@ namespace Infra.Networking
     // Without process Header data
     public static class HttpRequest
     {
-        public class HttpRequestResult
+        public class HttpRequestEvent
         {
             public UnityWebRequest webRequest;
-            public string url;
-            public byte[] data;
+            public UnityWebRequest.Result Result => webRequest.result;
+            public string url => webRequest.url;
+            public byte[] data => webRequest.downloadHandler.data;
             public TimeSpan timeSpan;
         }
 
-        public delegate void OnHttpRequestDone(HttpRequestResult result);
+        public delegate void OnHttpRequestDone(HttpRequestEvent e);
 
-        public static OnHttpRequestDone httpRequestDoneEvent;
+        public static OnHttpRequestDone doneEvent;
+        public static OnHttpRequestDone errorEvent;
 
         private static Dictionary<int, UnityWebRequest> fetchingRequests = new Dictionary<int, UnityWebRequest>();
-        private static Dictionary<int, DateTime> reqeustBeginTime = new Dictionary<int, DateTime>();
+        private static Dictionary<int, DateTime> requestBeginTimes = new Dictionary<int, DateTime>();
 
 
         public static int DoGet(string path)
@@ -30,13 +32,13 @@ namespace Infra.Networking
             www.SendWebRequest().completed += OnRequestCompleted;
             int key = www.GetHashCode();
             fetchingRequests[www.GetHashCode()] = www;
-            reqeustBeginTime[key] = DateTime.Now;
+            requestBeginTimes[key] = DateTime.Now;
             return key;
         }
 
-        public static TimeSpan GetRequestFetchTimeOffset(int hash)
+        private static TimeSpan GetRequestFetchTimeOffset(int hash)
         {
-            if (reqeustBeginTime.TryGetValue(hash, out DateTime begin))
+            if (requestBeginTimes.TryGetValue(hash, out DateTime begin))
             {
                 return DateTime.Now - begin;
             }
@@ -55,31 +57,43 @@ namespace Infra.Networking
             int key = wop.webRequest.GetHashCode();
             if (!wop.isDone)
             {
-                DispathDoneError(key, "request not complete corrently");
-                httpRequestDoneEvent(HttpRequestResult.Error);
+                DispatchError(key, "request not complete corrently");
                 return;
             }
 
 
             if (!string.IsNullOrEmpty(wop.webRequest.error) || wop.webRequest.result != UnityWebRequest.Result.Success)
             {
-                DispathDoneError(key, $"request get error: {wop.webRequest.error}");
+                DispatchError(key, $"request get error: {wop.webRequest.error}");
                 return;
             }
 
-            var data = wop.webRequest.downloadHandler.data;
-            httpRequestDoneEvent(new HttpRequestResult()
-            {
-                data = data,
-                timeSpan = GetRequestFetchTimeOffset(key),
-                url = wop.webRequest.url
-            });
-            fetchingRequests.Remove(key);
+            DispatchDone(key);
         }
 
-        private static void DispathDoneError(int hash, string message)
+        private static void DispatchError(int hash, string message)
         {
-            httpRequestDoneEvent(HttpRequestResult.Error);
+            if (fetchingRequests.TryGetValue(hash, out UnityWebRequest webRequest))
+            {
+                doneEvent(new HttpRequestEvent()
+                {
+                    webRequest = webRequest
+                });
+                fetchingRequests.Remove(hash);
+            }
+        }
+
+        private static void DispatchDone(int hash)
+        {
+            if (fetchingRequests.TryGetValue(hash, out UnityWebRequest webRequest))
+            {
+                errorEvent(new HttpRequestEvent()
+                {
+                    webRequest = webRequest,
+                    timeSpan = GetRequestFetchTimeOffset(hash),
+                });
+                fetchingRequests.Remove(hash);
+            }
         }
     }
 }

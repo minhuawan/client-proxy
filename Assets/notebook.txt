@@ -7,3 +7,16 @@ game/app        proxy               server
               [RECORD DATA]  
                     
     <---data---              
+    
+    
+    
+    
+GameWebRequest
+GameWebResponse
+
+ProxyWebReqeust
+ProxyWebResponse
+
+
+
+GameWebReqeust ---> ProxyWebRequest --->   [Caching/Monitor] --->   ProxyWebResponse ---> GameWebResponse
