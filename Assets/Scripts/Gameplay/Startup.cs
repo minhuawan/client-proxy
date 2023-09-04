@@ -1,6 +1,4 @@
-﻿using System;
-using Gameplay.Main;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Gameplay
 {
@@ -8,9 +6,7 @@ namespace Gameplay
     {
         private void Start()
         {
-            var main = new MainPresenter();
-            main.Initialize();
-            main.LoadView<MainView>();
+            
         }
     }
 }

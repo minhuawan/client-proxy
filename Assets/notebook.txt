@@ -1,0 +1,9 @@
+game/app        proxy               server
+    ---req--->  
+                           ---proxy--->
+                      
+                           <---data---
+                           
+              [RECORD DATA]  
+                    
+    <---data---              
